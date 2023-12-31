@@ -1,12 +1,23 @@
 # syntax=docker/dockerfile:1
-FROM python:3.9-slim
+FROM python:3.9-slim as compiler
+ENV PYTHONUNBUFFERED 1
 
-WORKDIR /app
+WORKDIR /app/
 
-COPY requirements.txt requirements.txt
+RUN python -m venv /opt/venv
 
-RUN pip3 install -r requirements.txt
+# Enable venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-COPY . .
+COPY ./requirements.txt /app/requirements.txt
+RUN pip install -Ur requirements.txt
+
+FROM python:3.9-slim as runner
+WORKDIR /app/
+COPY --from=compiler /opt/venv /opt/venv
+
+# Enable venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY . /app/
 
 CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]
