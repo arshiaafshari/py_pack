@@ -1,23 +1,18 @@
-# syntax=docker/dockerfile:1
-FROM python:3.9-slim as compiler
-ENV PYTHONUNBUFFERED 1
+# Stage 1: Build stage
+FROM python:3.9-slim as builder
 
-WORKDIR /app/
+WORKDIR /app
 
-RUN python -m venv /opt/venv
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Enable venv
-ENV PATH="/opt/venv/bin:$PATH"
+COPY . .
 
-COPY ./requirements.txt /app/requirements.txt
-RUN pip install -Ur requirements.txt
+# Stage 2: Final stage
+FROM python:3.9-alpine
 
-FROM python:3.9-slim as runner
-WORKDIR /app/
-COPY --from=compiler /opt/venv /opt/venv
+WORKDIR /app
 
-# Enable venv
-ENV PATH="/opt/venv/bin:$PATH"
-COPY . /app/
+COPY --from=builder /app .
 
 CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]
